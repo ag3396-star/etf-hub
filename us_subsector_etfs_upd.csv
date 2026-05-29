@@ -1,0 +1,185 @@
+#,Ticker,Sub_Sector,Category,Issuer
+1,SMH,Semiconductors,Technology,VanEck
+2,SOXX,Semiconductors,Technology,iShares
+3,SOXQ,Semiconductors,Technology,Invesco
+4,XSD,Semiconductors Small/Mid Cap,Technology,SPDR
+5,FTXL,Tech AlphaDEX,Technology,First Trust
+6,IGV,Software,Technology,iShares
+7,WCLD,Cloud Computing,Technology,WisdomTree
+8,CLOU,Cloud Computing,Technology,Global X
+9,SKYY,Cloud Computing,Technology,First Trust
+10,BUG,Cybersecurity,Technology,Global X
+11,CIBR,Cybersecurity,Technology,First Trust
+12,HACK,Cybersecurity,Technology,ETFMG
+13,IHAK,Cybersecurity,Technology,iShares
+14,WCBR,Cybersecurity,Technology,WisdomTree
+15,FDN,Internet,Technology,First Trust
+16,PNQI,Internet,Technology,Invesco
+17,FINX,Fintech,Technology,Global X
+18,IPAY,Payments/Fintech,Technology,ETFMG
+19,BOTZ,Robotics & AI,Technology,Global X
+20,ROBO,Robotics,Technology,Robo Global
+21,IRBO,Robotics & AI,Technology,iShares
+22,ROBT,Robotics,Technology,First Trust
+23,AIQ,AI & Technology,Technology,Global X
+24,ARKQ,Autonomous Tech & Robotics,Technology,ARK
+25,IGN,Networking,Technology,iShares
+26,XBI,Biotech,Healthcare,SPDR
+27,IBB,Biotech,Healthcare,iShares
+28,ARKG,Genomic Revolution,Healthcare,ARK
+29,PBE,Biotech,Healthcare,Invesco
+30,BBH,Biotech,Healthcare,VanEck
+31,IHE,Pharmaceuticals,Healthcare,iShares
+32,PPH,Pharmaceuticals,Healthcare,VanEck
+33,PJP,Pharmaceuticals,Healthcare,Invesco
+34,IHI,Medical Devices,Healthcare,iShares
+35,IHF,Healthcare Services/Providers,Healthcare,iShares
+36,XHS,Healthcare Services,Healthcare,SPDR
+37,HTEC,Healthcare Technology,Healthcare,ROBO Global
+38,IDNA,Genomics & Immunology,Healthcare,iShares
+39,GNOM,Genomics,Healthcare,Global X
+40,PSCH,Small Cap Healthcare,Healthcare,Invesco
+41,KBE,Banks,Financials,SPDR
+42,KRE,Regional Banks,Financials,SPDR
+43,IAT,Regional Banks,Financials,iShares
+44,KBWB,Banking,Financials,Invesco
+45,IAK,Insurance,Financials,iShares
+46,KIE,Insurance,Financials,SPDR
+47,KBWP,Insurance,Financials,Invesco
+48,IAI,Broker-Dealers,Financials,iShares
+49,PSP,Private Equity,Financials,Invesco
+50,ARKF,Fintech Innovation,Financials,ARK
+51,REM,Mortgage REITs,Financials,iShares
+52,MORT,Mortgage REITs,Financials,VanEck
+53,VNQ,REITs,Financials,Vanguard
+54,IYR,Real Estate/REITs,Financials,iShares
+55,RWR,REITs,Financials,SPDR
+56,REZ,Residential REITs,Financials,iShares
+57,SRVR,Data & Infrastructure REITs,Financials,Pacer
+58,INDS,Industrial REITs,Financials,Pacer
+59,XOP,Oil & Gas E&P,Energy,SPDR
+60,IEO,Oil & Gas E&P,Energy,iShares
+61,OIH,Oil Equipment & Services,Energy,VanEck
+62,IEZ,Oil Equipment,Energy,iShares
+63,XES,Oil Equipment Small Cap,Energy,SPDR
+64,FCG,Natural Gas,Energy,First Trust
+65,ICLN,Clean Energy,Energy,iShares
+66,QCLN,Clean Energy,Energy,First Trust
+67,ACES,Clean Energy,Energy,ALPS
+68,PBW,Clean Energy,Energy,Invesco
+69,TAN,Solar,Energy,Invesco
+70,RAYS,Solar,Energy,Global X
+71,FAN,Wind Energy,Energy,First Trust
+72,NLR,Nuclear & Uranium,Energy,VanEck
+73,URA,Uranium,Energy,Global X
+74,AMLP,MLPs / Midstream,Energy,Alerian
+75,MLPA,MLPs,Energy,Global X
+76,XRT,Retail,Consumer Discretionary,SPDR
+77,RTH,Retail,Consumer Discretionary,VanEck
+78,IBUY,E-commerce,Consumer Discretionary,Amplify
+79,ONLN,Online Retail,Consumer Discretionary,ProShares
+80,XHB,Homebuilders,Consumer Discretionary,SPDR
+81,ITB,Homebuilders,Consumer Discretionary,iShares
+82,PKB,Building & Construction,Consumer Discretionary,Invesco
+83,CARZ,Global Autos,Consumer Discretionary,First Trust
+84,DRIV,Electric & Autonomous Vehicles,Consumer Discretionary,Global X
+85,IDRV,Electric Vehicles,Consumer Discretionary,iShares
+86,PEJ,Leisure & Entertainment,Consumer Discretionary,Invesco
+87,AWAY,Travel,Consumer Discretionary,ETFMG
+88,JETS,Airlines,Consumer Discretionary,US Global
+89,BETZ,Sports Betting,Consumer Discretionary,Roundhill
+90,ESPO,Video Games,Consumer Discretionary,VanEck
+91,NERD,Video Games/Esports,Consumer Discretionary,Roundhill
+92,PBJ,Food & Beverage,Consumer Staples,Invesco
+93,FTXG,Consumer Staples AlphaDEX,Consumer Staples,First Trust
+94,MOO,Agribusiness,Consumer Staples,VanEck
+95,VEGI,Agriculture,Consumer Staples,iShares
+96,WOOD,Timber & Forestry,Consumer Staples,iShares
+97,ITA,Aerospace & Defense,Industrials,iShares
+98,PPA,Aerospace & Defense,Industrials,Invesco
+99,XAR,Aerospace & Defense,Industrials,SPDR
+100,IYT,Transportation,Industrials,iShares
+101,XTN,Transportation,Industrials,SPDR
+102,SEA,Shipping,Industrials,Breakwave
+103,PAVE,Infrastructure,Industrials,Global X
+104,GII,Infrastructure,Industrials,SPDR
+105,IFRA,Infrastructure,Industrials,iShares
+106,PSCI,Small Cap Industrials,Industrials,Invesco
+107,GDX,Gold Miners,Materials,VanEck
+108,GDXJ,Junior Gold Miners,Materials,VanEck
+109,RING,Gold Miners,Materials,iShares
+110,SIL,Silver Miners,Materials,Global X
+111,SILJ,Junior Silver Miners,Materials,ETFMG
+112,COPX,Copper Miners,Materials,Global X
+113,CPER,Copper,Materials,US Copper Index
+114,SLX,Steel,Materials,VanEck
+115,LIT,Lithium & Battery Tech,Materials,Global X
+116,REMX,Rare Earth & Strategic Metals,Materials,VanEck
+117,XME,Metals & Mining,Materials,SPDR
+118,XLU,Utilities,Utilities,SPDR
+119,VPU,Utilities,Utilities,Vanguard
+120,IDU,Utilities,Utilities,iShares
+121,PHO,Water,Utilities,Invesco
+122,FIW,Water,Utilities,First Trust
+123,CGW,Water,Utilities,Invesco Global
+124,PIO,Global Water,Utilities,Invesco
+125,IYZ,Telecom,Communication Services,iShares
+126,FCOM,Telecom,Communication Services,Fidelity
+127,PBS,Media,Communication Services,Invesco
+128,SOCL,Social Media,Communication Services,Global X
+129,XITK,Technology & Media,Communication Services,SPDR
+130,MSOS,Cannabis,Thematic,AdvisorShares
+131,MJ,Cannabis,Thematic,ETFMG
+132,POTX,Cannabis,Thematic,Global X
+133,UFO,Space,Thematic,Procure
+134,ARKX,Space,Thematic,ARK
+135,PRNT,3D Printing,Thematic,ARK
+136,BLOK,Blockchain,Thematic,Amplify
+137,BKCH,Crypto & Blockchain,Thematic,Global X
+138,LEGR,Blockchain,Thematic,First Trust
+139,KARS,Electric Vehicles,Thematic,KraneShares
+140,SNSR,Internet of Things,Thematic,Global X
+141,EDUT,Education,Thematic,Global X
+142,CTEC,Clean Tech,Thematic,Global X
+143,KRBN,Carbon Credits,Thematic,KraneShares
+144,GERM,Virus & Bacteria,Thematic,ETFMG
+145,HERO,Video Games,Thematic,Global X
+146,BJK,Gaming & Casinos,Thematic,VanEck
+147,PSCT,Small Cap Technology,Thematic,Invesco
+148,PSCF,Small Cap Financials,Thematic,Invesco
+149,PSCD,Small Cap Consumer Discretionary,Thematic,Invesco
+150,PSCC,Small Cap Consumer Staples,Thematic,Invesco
+151,PSCE,Small Cap Energy,Thematic,Invesco
+152,PSCM,Small Cap Materials,Thematic,Invesco
+153,PSCU,Small Cap Utilities,Thematic,Invesco
+154,HOMZ,Housing,Thematic,Hoya Capital
+155,PICK,Diversified Metals Mining,Thematic,iShares
+156,CUT,Timber,Thematic,Invesco
+157,ARKK,Disruptive Innovation,Thematic,ARK
+158,ARKW,Next Gen Internet,Thematic,ARK
+159,XLRE,Real Estate Select Sector,Thematic,SPDR
+160,SCHH,REITs,Thematic,Schwab
+161,QTEC,NASDAQ-100 Tech,Technology,First Trust
+162,^GSPC,S&P 500,Index,Market
+163,^RUT,Russell 2000,Index,Market
+164,XLG,S&P 50,Index,Invesco
+165,MGC,S&P 10,Index,Vanguard
+166,^DJI,Dow 30,Index,Market
+167,^NDX,Nasdaq 100,Index,Market
+168,MGK,Growth,Large Cap,Vanguard
+169,MGV,Value,Large Cap,Vanguard
+170,XLK,Information Technology,Sector,SPDR
+171,XLC,Communication Services,Sector,SPDR
+172,XLB,Materials,Sector,SPDR
+173,XLV,Healthcare,Sector,SPDR
+174,XLF,Financial,Sector,SPDR
+175,XLE,Energy,Sector,SPDR
+176,XLY,Consumer Discretionary,Sector,SPDR
+177,XLP,Consumer Staples,Sector,SPDR
+178,XLI,Industrial,Sector,SPDR
+179,GLD,Gold,Commodity,SPDR
+180,SLV,Silver,Commodity,iShares
+181,USO,Oil,Commodity,USCF
+182,BTC-USD,BTC-USD,Crypto,Crypto
+183,ETH-USD,ETH-USD,Crypto,Crypto
+184,BRK-B,Berkshire Hathaway,Financial,Berkshire
