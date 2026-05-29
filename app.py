@@ -740,9 +740,16 @@ def render_all_metrics(metrics_df: pd.DataFrame, metadata: pd.DataFrame):
             "Sortino Ratio":   "{:.2f}",
             "$1 Growth":       "${:.3f}",
         })
-        .background_gradient(subset=["Annual Return %"], cmap="RdYlGn", vmin=-50, vmax=100)
-        .background_gradient(subset=["Sharpe Ratio"],    cmap="Blues",  vmin=0,   vmax=3)
-        .background_gradient(subset=["Sortino Ratio"],   cmap="Purples",vmin=0,   vmax=4)
+        .map(
+            lambda v: "color: #10b981; font-weight:600" if isinstance(v, float) and v > 0
+            else ("color: #ef4444; font-weight:600" if isinstance(v, float) and v < 0 else ""),
+            subset=["Annual Return %", "Total Return %"]
+        )
+        .map(
+            lambda v: "color: #60a5fa; font-weight:600" if isinstance(v, float) and v >= 1
+            else ("color: #f87171" if isinstance(v, float) and v < 0 else ""),
+            subset=["Sharpe Ratio", "Sortino Ratio"]
+        )
     )
 
     st.dataframe(styled, use_container_width=True, height=520)
