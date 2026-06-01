@@ -50,34 +50,56 @@ st.markdown("""
 <style>
     .stApp { background-color: #0f172a; color: #f8fafc; }
 
-    /* CHANGE 1: Unselected pills — always dark/visible, never white */
-    [data-testid="stPills"] button {
+    /* CHANGE 1: Pills — nuke Streamlit defaults, force dark unselected */
+    /* Target every possible internal test-id Streamlit uses for pills */
+    [data-testid="stPills"] button,
+    [data-testid="stPills"] button:not([aria-selected="true"]):not([aria-pressed="true"]),
+    button[data-testid="stBaseButton-pills"],
+    button[data-testid="stBaseButton-secondaryPills"],
+    button[data-testid="stBaseButton-secondary"] {
         background-color: #1e293b !important;
+        background: #1e293b !important;
         border: 1px solid #475569 !important;
+        border-radius: 999px !important;
         color: #94a3b8 !important;
         opacity: 1 !important;
+        visibility: visible !important;
     }
-    [data-testid="stPills"] button * {
+    [data-testid="stPills"] button span,
+    [data-testid="stPills"] button p,
+    [data-testid="stPills"] button div,
+    button[data-testid="stBaseButton-pills"] span,
+    button[data-testid="stBaseButton-pills"] p {
         color: #94a3b8 !important;
+        visibility: visible !important;
     }
+    /* Hover state */
     [data-testid="stPills"] button:hover {
         background-color: #334155 !important;
+        background: #334155 !important;
         border-color: #64748b !important;
     }
-    [data-testid="stPills"] button:hover * {
+    [data-testid="stPills"] button:hover span,
+    [data-testid="stPills"] button:hover p {
         color: #e2e8f0 !important;
     }
+    /* Active / selected pill */
     [data-testid="stPills"] button[aria-selected="true"],
     [data-testid="stPills"] button[aria-pressed="true"],
-    [data-testid="stPills"] [data-testid="stBaseButton-pillsActive"],
-    [data-testid="stPills"] [data-testid="stBaseButton-activePill"] {
+    button[data-testid="stBaseButton-pillsActive"],
+    button[data-testid="stBaseButton-activePill"] {
         background-color: #3b82f6 !important;
+        background: #3b82f6 !important;
         border: 1px solid #60a5fa !important;
     }
-    [data-testid="stPills"] button[aria-selected="true"] *,
-    [data-testid="stPills"] button[aria-pressed="true"] *,
-    [data-testid="stPills"] [data-testid="stBaseButton-pillsActive"] *,
-    [data-testid="stPills"] [data-testid="stBaseButton-activePill"] * {
+    [data-testid="stPills"] button[aria-selected="true"] span,
+    [data-testid="stPills"] button[aria-selected="true"] p,
+    [data-testid="stPills"] button[aria-pressed="true"] span,
+    [data-testid="stPills"] button[aria-pressed="true"] p,
+    button[data-testid="stBaseButton-pillsActive"] span,
+    button[data-testid="stBaseButton-pillsActive"] p,
+    button[data-testid="stBaseButton-activePill"] span,
+    button[data-testid="stBaseButton-activePill"] p {
         color: #ffffff !important;
         font-weight: 700 !important;
     }
@@ -549,6 +571,7 @@ def render_explorer(metadata):
 
 def main():
     st.title("📊 Sub-Sector Index Performance Analytics Hub")
+    inject_pill_style_js()
 
     metadata = load_metadata()
     if metadata.empty:
@@ -614,6 +637,49 @@ def main():
         Data calculated via Yahoo Finance API (adjusted split/dividend close metrics) · Risk-free rate pegged at 4.25% annualized ·
         Performance tracking elements calculated over standard monthly intervals.
     </div>
+    """, unsafe_allow_html=True)
+
+# JS injected once to forcibly restyle pills after Streamlit renders them
+# (Streamlit sometimes applies inline styles that CSS !important cannot override)
+def inject_pill_style_js():
+    st.markdown("""
+    <script>
+    (function fixPills() {
+        function applyStyles() {
+            const container = document.querySelector('[data-testid="stPills"]');
+            if (!container) return;
+            const buttons = container.querySelectorAll('button');
+            buttons.forEach(btn => {
+                const isActive = btn.getAttribute('aria-selected') === 'true'
+                              || btn.getAttribute('aria-pressed') === 'true'
+                              || btn.dataset.testid === 'stBaseButton-pillsActive'
+                              || btn.dataset.testid === 'stBaseButton-activePill';
+                if (isActive) {
+                    btn.style.setProperty('background', '#3b82f6', 'important');
+                    btn.style.setProperty('background-color', '#3b82f6', 'important');
+                    btn.style.setProperty('border', '1px solid #60a5fa', 'important');
+                    btn.querySelectorAll('*').forEach(el => {
+                        el.style.setProperty('color', '#ffffff', 'important');
+                    });
+                } else {
+                    btn.style.setProperty('background', '#1e293b', 'important');
+                    btn.style.setProperty('background-color', '#1e293b', 'important');
+                    btn.style.setProperty('border', '1px solid #475569', 'important');
+                    btn.querySelectorAll('*').forEach(el => {
+                        el.style.setProperty('color', '#94a3b8', 'important');
+                    });
+                }
+            });
+        }
+        // Run immediately and watch for DOM changes
+        applyStyles();
+        const observer = new MutationObserver(applyStyles);
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+        // Also poll briefly in case of delayed render
+        let tries = 0;
+        const iv = setInterval(() => { applyStyles(); if (++tries > 20) clearInterval(iv); }, 200);
+    })();
+    </script>
     """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
