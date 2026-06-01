@@ -206,20 +206,20 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
     subsectors = metrics_df[metrics_df["Ticker"] != BENCHMARK].copy()
     top_6 = subsectors.sort_values(by="Annualized Return %", ascending=False).head(6)
     
-    # Render Circle Badges (Safely accessing string fields via dict conversion)
+    # Render Circle Badges via direct DataFrame row indexing to prevent KeyErrors
     cols_circ = st.columns(7)
-    for idx, row in enumerate(top_6.itertuples()):
-        row_dict = row._asdict()
+    for idx, tk in enumerate(top_6["Ticker"].tolist()):
+        asset_metrics = subsectors[subsectors["Ticker"] == tk].iloc[0]
         with cols_circ[idx]:
             border_color = TOP6_COLORS[idx % len(TOP6_COLORS)]
             st.markdown(f"""
             <div class="circle-card" style="border: 3px solid {border_color};">
-                <div class="circle-ticker">{row_dict['Ticker']}</div>
-                <div class="circle-return" style="color:{border_color};">+{row_dict['Annualized_Return_']}%</div>
+                <div class="circle-ticker">{tk}</div>
+                <div class="circle-return" style="color:{border_color};">+{asset_metrics['Annualized Return %']}%</div>
                 <div class="circle-metrics">
-                    Sharpe: {row_dict['Sharpe_Ratio']}<br>
-                    Sortino: {row_dict['_5']:.1f}<br>
-                    Mult: {row_dict['Total_Return_Multiple']}x
+                    Sharpe: {asset_metrics['Sharpe Ratio']}<br>
+                    Sortino: {asset_metrics['Sortino Ratio (Downside Risk)']:.1f}<br>
+                    Mult: {asset_metrics['Total Return Multiple']}x
                 </div>
             </div>
             """, unsafe_allow_html=True)
