@@ -145,9 +145,7 @@ def fetch_prices(tickers, months):
     window_start = end_date - relativedelta(months=months)
     df_close = df_close[df_close.index >= window_start]
     
-    # Resample using standard monthly close
     monthly_prices = df_close.resample('M').last().ffill().bfill()
-    
     if monthly_prices.empty or len(monthly_prices) < 2:
         return pd.DataFrame(), pd.DataFrame()
 
@@ -195,18 +193,15 @@ def fetch_prices(tickers, months):
 def render_home(normalized, metrics_df, metadata, months, selected_tf):
     st.subheader("🏆 Portfolio Sector Leaders")
     
-    # Isolate benchmark data rows
     bench_row = metrics_df[metrics_df["Ticker"] == BENCHMARK]
     if bench_row.empty:
         st.warning("Benchmark performance row unavailable for this timeline window.")
         return
     bench_data = bench_row.iloc[0]
 
-    # Filter out benchmark to capture highest performing assets
     subsectors = metrics_df[metrics_df["Ticker"] != BENCHMARK].copy()
     top_6 = subsectors.sort_values(by="Annualized Return %", ascending=False).head(6)
     
-    # Render Circle Badges
     cols_circ = st.columns(7)
     for idx, tk in enumerate(top_6["Ticker"].tolist()):
         asset_metrics = subsectors[subsectors["Ticker"] == tk].iloc[0]
@@ -239,7 +234,6 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Trajectory Analysis Line Chart Visualization
     st.subheader("📈 Performance Tracking Matrix ($1 Base Allocation)")
     chart_tickers = list(top_6["Ticker"]) + [BENCHMARK]
     plot_df = normalized[chart_tickers].copy()
@@ -277,8 +271,6 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
     st.plotly_chart(fig, use_container_width=True)
     
     st.markdown("---")
-    
-    # Explanatory Single-Line Summaries for Ratios
     st.subheader("🎯 Risk-Return Efficiency Scatter Profile")
     st.markdown("""
     <div class="explainer-banner">
@@ -288,7 +280,6 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
     </div>
     """, unsafe_allow_html=True)
     
-    # Build Risk-Reward Interactive Scatter Plot Matrix
     scatter_df = metrics_df.copy()
     scatter_df = scatter_df.merge(metadata[["Ticker", "Sub_Sector", "Category"]], on="Ticker", how="left")
     scatter_df["Sub_Sector"] = scatter_df["Sub_Sector"].fillna(scatter_df["Ticker"])
@@ -328,73 +319,74 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
 
 def render_all_metrics(metrics_df, metadata):
     st.subheader("📋 Comprehensive Sub-Sector Performance Engine")
+    st.markdown("💡 *Use the search button on the top right of the grid or click headers to filter and instantly sort.*")
     
-    merged = metrics_df.merge(metadata[["Ticker", "Sub_Sector", "Category", "Description", "URL"]], on="Ticker", how="left")
+    merged = metrics_df.merge(metadata[["Ticker", "Sub_Sector", "Category", "Issuer", "Description", "URL"]], on="Ticker", how="left")
     merged["Sub_Sector"] = merged["Sub_Sector"].fillna(merged["Ticker"])
     merged["Category"] = merged["Category"].fillna("Unclassified")
+    merged["Issuer"] = merged["Issuer"].fillna("N/A")
+    merged["URL"] = merged["URL"].fillna("https://finance.yahoo.com")
     
-    display_rows = []
-    for row in merged.itertuples():
-        desc = row.Description if pd.notna(row.Description) and str(row.Description).strip() != "" else "View Factsheet"
-        url_text = str(row.URL).strip() if pd.notna(row.URL) else ""
-        
-        if url_text and url_text.startswith("http"):
-            summary_link = f'<a href="{url_text}" target="_blank">{desc[:50]}...</a>'
-        else:
-            summary_link = desc[:50]
-            
-        display_rows.append({
-            "Ticker": row.Ticker,
-            "Sub-Sector Name": row.Sub_Sector,
-            "Classification Category": row.Category,
-            "Total Return Mult.": row._2,
-            "Ann. Return %": row._3,
-            "Sharpe Ratio": row._4,
-            "Sortino Ratio": row._5,
-            "Summary Profile Link": summary_link
-        })
-        
-    df_display = pd.DataFrame(display_rows)
-    st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
+    display_df = pd.DataFrame({
+        "Ticker": merged["Ticker"],
+        "Sub-Sector Name": merged["Sub_Sector"],
+        "Category": merged["Category"],
+        "Total Return Mult": merged["Total Return Multiple"],
+        "Ann. Return %": merged["Annualized Return %"],
+        "Sharpe Ratio": merged["Sharpe Ratio"],
+        "Sortino Ratio": merged["Sortino Ratio (Downside Risk)"],
+        "Issuer": merged["Issuer"],
+        "Issuer URL Link": merged["URL"],
+        "Summary Profile Description": merged["Description"].fillna("Click profile link to view fund breakdown details.")
+    })
+    
+    # Render interactive datagrid featuring embedded hover profiles and hyperlink rendering engine maps
+    st.data_editor(
+        display_df,
+        hide_index=True,
+        use_container_width=True,
+        disabled=True,
+        column_config={
+            "Ticker": st.column_config.TextColumn("Ticker", help="Fund Market Symbol"),
+            "Issuer": st.column_config.LinkColumn(
+                "Fund Issuer", 
+                help="Click to visit fund factsheet issuer portal.",
+                display_text=r"^.*$", # Match and pull string directly out of Issuer data column
+                validate=r"^http",
+            ),
+            "Issuer URL Link": st.column_config.LinkColumn("Issuer URL Link", width="medium"),
+            "Summary Profile Description": st.column_config.TextColumn("Summary Profile Description", width="large"),
+            "Ann. Return %": st.column_config.NumberColumn("Ann. Return %", format="%.2f%%"),
+            "Total Return Mult": st.column_config.NumberColumn("Total Return Mult", format="%.2fx")
+        }
+    )
 
 def render_explorer(metadata):
     st.subheader("🔍 Metadata Cross-Reference Catalog")
-    search_query = st.text_input("Filter database rows by keyword (Ticker, Description, Issuer, Classification Group):", "").strip()
+    st.markdown("💡 *Global filter and hyperlink references to full document profiles.*")
     
-    if search_query:
-        mask = (
-            metadata["Ticker"].str.contains(search_query, case=False, na=False) |
-            metadata["Sub_Sector"].str.contains(search_query, case=False, na=False) |
-            metadata["Category"].str.contains(search_query, case=False, na=False) |
-            metadata["Issuer"].str.contains(search_query, case=False, na=False)
-        )
-        filtered_df = metadata[mask]
-    else:
-        filtered_df = metadata
-
-    display_rows = []
-    for row in filtered_df.itertuples():
-        desc = row.Description if pd.notna(row.Description) and str(row.Description).strip() != "" else "Reference Data"
-        url_text = str(row.URL).strip() if pd.notna(row.URL) else ""
-        
-        if url_text and url_text.startswith("http"):
-            interactive_link = f'<a href="{url_text}" target="_blank">{desc[:65]}...</a>'
-        else:
-            interactive_link = desc[:65]
-            
-        display_rows.append({
-            "Ticker": row.Ticker,
-            "Sub-Sector Name": row.Sub_Sector,
-            "Category Group": row.Category,
-            "Fund Issuer": row.Issuer,
-            "Interactive Documentation Link": interactive_link
-        })
-        
-    if display_rows:
-        df_exp = pd.DataFrame(display_rows)
-        st.write(df_exp.to_html(escape=False, index=False), unsafe_allow_html=True)
-    else:
-        st.info("No matching database elements identified for your input query criteria.")
+    explorer_df = metadata.copy()
+    explorer_df["URL"] = explorer_df["URL"].fillna("https://finance.yahoo.com")
+    explorer_df["Description"] = explorer_df["Description"].fillna("No text document registry listed.")
+    
+    display_exp = pd.DataFrame({
+        "Ticker Symbol": explorer_df["Ticker"],
+        "Sub-Sector Name": explorer_df["Sub_Sector"],
+        "Classification Group": explorer_df["Category"],
+        "Fund Issuer": explorer_df["Issuer"],
+        "Factsheet Link Reference": explorer_df["URL"],
+        "Full Documentation Profile": explorer_df["Description"]
+    })
+    
+    st.dataframe(
+        display_exp,
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "Factsheet Link Reference": st.column_config.LinkColumn("Factsheet Link Reference", display_text="Open Official Portal 🌐"),
+            "Full Documentation Profile": st.column_config.TextColumn("Full Documentation Profile", width="large")
+        }
+    )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # APPLICATION ORCHESTRATION LAYER
@@ -407,6 +399,7 @@ def main():
         st.error("Application dataset could not be generated from source data mapping.")
         st.stop()
 
+    # Ensure all timeframes are visible right at the top
     unique_assets_count = len(metadata["Ticker"].dropna().unique())
     
     cols_metrics = st.columns([1, 1])
@@ -425,8 +418,8 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
+    # All choices remain completely visible inline inside rectangular pill matrices
     st.markdown("<p style='font-size: 14px; font-weight: 600; color:#94a3b8; margin-bottom:6px;'>Select Performance Tracking Frame Horizon:</p>", unsafe_allow_html=True)
-    
     selected_tf = st.pills(
         label="Select Performance Horizon Frame",
         options=list(TIMEFRAME_MAP.keys()),
