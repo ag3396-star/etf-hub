@@ -50,33 +50,34 @@ st.markdown("""
 <style>
     .stApp { background-color: #0f172a; color: #f8fafc; }
 
-    /* CHANGE 1: Unselected pills always visible, slate bg, muted text */
-    div[data-testid="stPills"] button,
-    div[data-testid="stPills"] [data-testid="stBaseButton-secondaryPill"] {
+    /* CHANGE 1: Unselected pills — always dark/visible, never white */
+    [data-testid="stPills"] button {
         background-color: #1e293b !important;
         border: 1px solid #475569 !important;
+        color: #94a3b8 !important;
         opacity: 1 !important;
     }
-    div[data-testid="stPills"] button p,
-    div[data-testid="stPills"] [data-testid="stBaseButton-secondaryPill"] p {
+    [data-testid="stPills"] button * {
         color: #94a3b8 !important;
     }
-    div[data-testid="stPills"] button:hover,
-    div[data-testid="stPills"] [data-testid="stBaseButton-secondaryPill"]:hover {
+    [data-testid="stPills"] button:hover {
         background-color: #334155 !important;
         border-color: #64748b !important;
     }
-    div[data-testid="stPills"] button:hover p,
-    div[data-testid="stPills"] [data-testid="stBaseButton-secondaryPill"]:hover p {
+    [data-testid="stPills"] button:hover * {
         color: #e2e8f0 !important;
     }
-    div[data-testid="stPills"] button[aria-selected="true"],
-    div[data-testid="stPills"] [data-testid="stBaseButton-activePill"] {
+    [data-testid="stPills"] button[aria-selected="true"],
+    [data-testid="stPills"] button[aria-pressed="true"],
+    [data-testid="stPills"] [data-testid="stBaseButton-pillsActive"],
+    [data-testid="stPills"] [data-testid="stBaseButton-activePill"] {
         background-color: #3b82f6 !important;
         border: 1px solid #60a5fa !important;
     }
-    div[data-testid="stPills"] button[aria-selected="true"] p,
-    div[data-testid="stPills"] [data-testid="stBaseButton-activePill"] p {
+    [data-testid="stPills"] button[aria-selected="true"] *,
+    [data-testid="stPills"] button[aria-pressed="true"] *,
+    [data-testid="stPills"] [data-testid="stBaseButton-pillsActive"] *,
+    [data-testid="stPills"] [data-testid="stBaseButton-activePill"] * {
         color: #ffffff !important;
         font-weight: 700 !important;
     }
@@ -497,8 +498,7 @@ def render_all_metrics(metrics_df, metadata):
                  f'<br><input class="col-search" placeholder="Filter…" /></th>')
     html += '</tr></thead><tbody>'
 
-    for row in merged.itertuples(index=False):
-        r = row._asdict()
+    for _, r in merged.iterrows():
         html += "<tr>"
         html += f"<td><b>{r['Ticker']}</b></td>"
         html += f"<td>{r['Sub_Sector']}</td>"
