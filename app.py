@@ -430,12 +430,16 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
         legend=dict(font=dict(color="#f8fafc", size=11),
                     bgcolor="rgba(15,23,42,0.85)",
                     bordercolor="#475569", borderwidth=1),
-        xaxis=dict(title="Annualized Return (%)", gridcolor="#334155",
-                   tickfont=dict(color="#94a3b8"), titlefont=dict(color="#94a3b8"),
-                   zeroline=True, zerolinecolor="#475569"),
-        yaxis=dict(title="Sharpe Ratio", gridcolor="#334155",
-                   tickfont=dict(color="#94a3b8"), titlefont=dict(color="#94a3b8"),
-                   zeroline=True, zerolinecolor="#475569"),
+        xaxis=dict(
+            title=dict(text="Annualized Return (%)", font=dict(color="#94a3b8")),
+            gridcolor="#334155", tickfont=dict(color="#94a3b8"),
+            zeroline=True, zerolinecolor="#475569"
+        ),
+        yaxis=dict(
+            title=dict(text="Sharpe Ratio", font=dict(color="#94a3b8")),
+            gridcolor="#334155", tickfont=dict(color="#94a3b8"),
+            zeroline=True, zerolinecolor="#475569"
+        ),
     )
     st.plotly_chart(fig_scatter, use_container_width=True)
 
