@@ -51,31 +51,14 @@ TIMEFRAME_MAP = {
 TOP6_COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4"]
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CUSTOM CSS
+# CUSTOM CSS FOR THE THEME
 # ─────────────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Global Background Fixes */
+    /* Global Styling */
     .stApp { background-color: #0f172a; color: #f8fafc; }
     
-    /* Segmented Control Styling Overrides */
-    div[data-baseweb="segmented-control"] {
-        width: 100% !important;
-        background-color: #1e293b !important;
-        border-radius: 8px !important;
-        padding: 4px !important;
-    }
-    button[data-baseweb="tab"] {
-        color: #94a3b8 !important;
-        font-weight: 600 !important;
-        border-radius: 6px !important;
-    }
-    button[aria-selected="true"] {
-        background-color: #3b82f6 !important;
-        color: #ffffff !important;
-    }
-
-    /* Metric Containers */
+    /* Metrics Top Cards Layout */
     .metric-container {
         background: linear-gradient(135deg, #1e293b, #0f172a);
         border: 1px solid #334155;
@@ -88,7 +71,7 @@ st.markdown("""
     .metric-val { font-size: 28px; font-weight: 700; color: #3b82f6; margin-top: 4px; }
     .metric-lbl { font-size: 13px; color: #94a3b8; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
 
-    /* Leaders Circle Cards */
+    /* Performance Circle Badges */
     .circle-card {
         border-radius: 50%;
         width: 145px;
@@ -113,17 +96,18 @@ st.markdown("""
     .explainer-banner {
         background-color: #1e293b;
         border-left: 4px solid #3b82f6;
-        padding: 12px 16px;
+        padding: 14px 18px;
         border-radius: 0 8px 8px 0;
-        margin: 15px 0;
+        margin: 15px 0 25px 0;
         font-size: 14px;
         color: #cbd5e1;
+        line-height: 1.6;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CORE DATA FUNCTIONS
+# CORE DATA PROCESSING FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
 @st.cache_data
 def load_metadata():
@@ -142,7 +126,6 @@ def load_metadata():
 def fetch_prices(tickers, months):
     end_date = datetime.today()
     start_date = end_date - relativedelta(months=months + 1)
-    
     unique_tickers = list(set(tickers + [BENCHMARK]))
     
     try:
@@ -154,7 +137,6 @@ def fetch_prices(tickers, months):
     if df_raw.empty:
         return pd.DataFrame(), pd.DataFrame()
 
-    # Flatten out multi-index columns if they exist
     if isinstance(df_raw.columns, pd.MultiIndex):
         df_close = df_raw['Close']
     else:
@@ -163,7 +145,7 @@ def fetch_prices(tickers, months):
     window_start = end_date - relativedelta(months=months)
     df_close = df_close[df_close.index >= window_start]
     
-    # Resample using stable 'M' frequency parameters
+    # Resample using standard monthly close
     monthly_prices = df_close.resample('M').last().ffill().bfill()
     
     if monthly_prices.empty or len(monthly_prices) < 2:
@@ -171,7 +153,6 @@ def fetch_prices(tickers, months):
 
     normalized = monthly_prices / monthly_prices.iloc[0]
     
-    # Generate risk-adjusted return matrices
     metrics_list = []
     rf_monthly = RF_ANNUAL / 12
     n_years = months / 12.0
@@ -214,30 +195,31 @@ def fetch_prices(tickers, months):
 def render_home(normalized, metrics_df, metadata, months, selected_tf):
     st.subheader("🏆 Portfolio Sector Leaders")
     
-    # Isolate benchmark statistics
+    # Isolate benchmark data rows
     bench_row = metrics_df[metrics_df["Ticker"] == BENCHMARK]
     if bench_row.empty:
-        st.warning("Benchmark metrics unavailable for this frame selection.")
+        st.warning("Benchmark performance row unavailable for this timeline window.")
         return
     bench_data = bench_row.iloc[0]
 
-    # Filter out benchmark to view outperforming components
+    # Filter out benchmark to capture highest performing assets
     subsectors = metrics_df[metrics_df["Ticker"] != BENCHMARK].copy()
     top_6 = subsectors.sort_values(by="Annualized Return %", ascending=False).head(6)
     
-    # Draw out performance circular tracking elements
+    # Render Circle Badges (Safely accessing string fields via dict conversion)
     cols_circ = st.columns(7)
     for idx, row in enumerate(top_6.itertuples()):
+        row_dict = row._asdict()
         with cols_circ[idx]:
             border_color = TOP6_COLORS[idx % len(TOP6_COLORS)]
             st.markdown(f"""
             <div class="circle-card" style="border: 3px solid {border_color};">
-                <div class="circle-ticker">{row.Ticker}</div>
-                <div class="circle-return" style="color:{border_color};">+{row.Annualized Return %}%</div>
+                <div class="circle-ticker">{row_dict['Ticker']}</div>
+                <div class="circle-return" style="color:{border_color};">+{row_dict['Annualized_Return_']}%</div>
                 <div class="circle-metrics">
-                    Sharpe: {row._4}<br>
-                    Sortino: {row._5:.1f}<br>
-                    Mult: {row._2}x
+                    Sharpe: {row_dict['Sharpe_Ratio']}<br>
+                    Sortino: {row_dict['_5']:.1f}<br>
+                    Mult: {row_dict['Total_Return_Multiple']}x
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -255,10 +237,10 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    # Core Trajectory Asset Line Chart Plot
-    st.subheader("📈 Normalized Performance Tracking Matrix ($1 USD Base Allocation)")
+    # Trajectory Analysis Line Chart Visualization
+    st.subheader("📈 Performance Tracking Matrix ($1 Base Allocation)")
     chart_tickers = list(top_6["Ticker"]) + [BENCHMARK]
     plot_df = normalized[chart_tickers].copy()
     
@@ -271,7 +253,7 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
             name=BENCHMARK_LABEL if is_bench else tk,
             line=dict(
                 color="#ef4444" if is_bench else TOP6_COLORS[idx % len(TOP6_COLORS)],
-                width=3.5 if is_bench else 2.0,
+                width=3.5 if is_bench else 2.2,
                 dash="dash" if is_bench else "solid"
             )
         ))
@@ -280,38 +262,37 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
         template="plotly_dark",
         paper_bgcolor="#0f172a",
         plot_bgcolor="#1e293b",
-        margin=dict(l=20, r=20, t=10, b=20),
+        margin=dict(l=20, r=20, t=15, b=20),
         height=450,
         hovermode="x unified",
         legend=dict(
-            font=dict(color="#f1f5f9", size=12),  # High-contrast off-white legends
-            bgcolor="rgba(15,23,42,0.8)",
-            bordercolor="#334155",
+            font=dict(color="#f8fafc", size=12),  # Clear, bright high-contrast text color
+            bgcolor="rgba(15,23,42,0.85)",
+            bordercolor="#475569",
             borderwidth=1
         ),
         xaxis=dict(gridcolor="#334155", tickfont=dict(color="#94a3b8")),
-        yaxis=dict(gridcolor="#334155", tickfont=dict(color="#94a3b8"), title="Growth Value ($)")
+        yaxis=dict(gridcolor="#334155", tickfont=dict(color="#94a3b8"), title="Growth Multiplier ($)")
     )
     st.plotly_chart(fig, use_container_width=True)
     
     st.markdown("---")
     
-    # Risk Profile Scatter View Component
-    st.subheader("🎯 Risk-Return Efficiency Profile Map")
-    
-    # High-level definition banners
+    # Explanatory Single-Line Summaries for Ratios
+    st.subheader("🎯 Risk-Return Efficiency Scatter Profile")
     st.markdown("""
     <div class="explainer-banner">
-        💡 <b>Metrics Reference Guide:</b><br>
-        • <b>Sharpe Ratio:</b> Evaluates total excess return per unit of overall variance. Higher values indicate stronger reward profiles relative to total portfolio volatility.<br>
-        • <b>Sortino Ratio (Downside Risk Focus):</b> Penalizes strictly negative, unwanted price movements rather than overall volatility. It measures the excess return relative to standard downside deviation.
+        💡 <b>Risk-Adjusted Explanatory Metric Guide:</b><br>
+        • <b>Sharpe Ratio:</b> Explains the excess return earned per unit of <i>total risk (volatility)</i>; higher numbers mean more efficient risk utilization.<br>
+        • <b>Sortino Ratio (Downside Risk):</b> Explains the excess return earned per unit of <i>negative risk (drawdowns)</i>, ignoring upside volatility to focus entirely on capital preservation.
     </div>
     """, unsafe_allow_html=True)
     
+    # Build Risk-Reward Interactive Scatter Plot Matrix
     scatter_df = metrics_df.copy()
     scatter_df = scatter_df.merge(metadata[["Ticker", "Sub_Sector", "Category"]], on="Ticker", how="left")
     scatter_df["Sub_Sector"] = scatter_df["Sub_Sector"].fillna(scatter_df["Ticker"])
-    scatter_df["Marker_Size"] = scatter_df["Ticker"].apply(lambda x: 14 if x == BENCHMARK else 9)
+    scatter_df["Marker_Size"] = scatter_df["Ticker"].apply(lambda x: 15 if x == BENCHMARK else 9)
     
     fig_scatter = px.scatter(
         scatter_df,
@@ -320,7 +301,7 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
         color="Category",
         text="Ticker",
         size="Marker_Size",
-        size_max=14,
+        size_max=15,
         hover_data={
             "Sub_Sector": True,
             "Ticker": True,
@@ -329,63 +310,58 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
             "Sortino Ratio (Downside Risk)": ":.2f",
             "Marker_Size": False
         },
-        labels={"Sortino Ratio (Downside Risk)": "Sortino Ratio (Downside Risk Deviation Penalty)"}
+        labels={"Sortino Ratio (Downside Risk)": "Sortino Ratio (Downside Risk Deviation)"}
     )
     
-    fig_scatter.update_traces(textposition="top center", marker=dict(opacity=0.85, line=dict(width=1, color="#f8fafc")))
+    fig_scatter.update_traces(textposition="top center", marker=dict(opacity=0.85, line=dict(width=1, color="#ffffff")))
     fig_scatter.update_layout(
         template="plotly_dark",
         paper_bgcolor="#0f172a",
         plot_bgcolor="#1e293b",
         height=550,
-        margin=dict(l=20, r=20, t=20, b=20),
+        margin=dict(l=20, r=20, t=15, b=20),
         xaxis=dict(gridcolor="#334155", tickfont=dict(color="#94a3b8")),
-        yaxis=dict(gridcolor="#334155", tickfont=dict(color="#94a3b8")),
-        legend=dict(font=dict(color="#f1f5f9"), bgcolor="rgba(15,23,42,0.8)", bordercolor="#334155", borderwidth=1)
+        yaxis=dict(gridcolor="#334155", tickfont=dict(color="#94a3b8"), title="Annualized Rate of Return %"),
+        legend=dict(font=dict(color="#f8fafc"), bgcolor="rgba(15,23,42,0.85)", bordercolor="#475569", borderwidth=1)
     )
     st.plotly_chart(fig_scatter, use_container_width=True)
 
 def render_all_metrics(metrics_df, metadata):
-    st.subheader("📋 Comprehensive Sub-Sector Metrics Engine")
+    st.subheader("📋 Comprehensive Sub-Sector Performance Engine")
     
     merged = metrics_df.merge(metadata[["Ticker", "Sub_Sector", "Category", "Description", "URL"]], on="Ticker", how="left")
     merged["Sub_Sector"] = merged["Sub_Sector"].fillna(merged["Ticker"])
-    merged["Category"] = merged["Category"].fillna("Other / Unclassified")
+    merged["Category"] = merged["Category"].fillna("Unclassified")
     
-    # Process URLs and descriptions into safe markdown links
+    # Format rows to replace full descriptions and text URLs with clean links
     display_rows = []
     for row in merged.itertuples():
-        # Handle description formatting
-        desc = row.Description if pd.notna(row.Description) and str(row.Description).strip() != "" else "No overview filed."
+        desc = row.Description if pd.notna(row.Description) and str(row.Description).strip() != "" else "View Profile"
         url_text = str(row.URL).strip() if pd.notna(row.URL) else ""
         
-        # Build clean hyperlink labels
+        # Turn into hyperlink markdown string
         if url_text and url_text.startswith("http"):
-            link_markdown = f"[{desc[:50]}...]({url_text})"
+            summary_link = f"[{desc[:45]}...]({url_text})"
         else:
-            link_markdown = desc if len(desc) <= 50 else f"{desc[:50]}..."
+            summary_link = desc if len(desc) <= 45 else f"{desc[:45]}..."
             
         display_rows.append({
-            "Ticker Symbol": row.Ticker,
-            "Sub-Sector Description": row.Sub_Sector,
-            "Asset Classification": row.Category,
+            "Ticker": row.Ticker,
+            "Sub-Sector Name": row.Sub_Sector,
+            "Classification Category": row.Category,
             "Total Return Mult.": row._2,
-            "Annual Return %": row._3,
+            "Ann. Return %": row._3,
             "Sharpe Ratio": row._4,
-            "Sortino (Downside)": row._5,
-            "Interactive Summary Profile": link_markdown
+            "Sortino Ratio": row._5,
+            "Summary Profile Link": summary_link
         })
         
     df_display = pd.DataFrame(display_rows)
-    st.markdown(
-        df_display.to_markdown(index=False),
-        unsafe_allow_html=True
-    )
+    st.markdown(df_display.to_markdown(index=False), unsafe_allow_html=True)
 
 def render_explorer(metadata):
-    st.subheader("🔍 Metadata Reference Catalog Explorer")
-    
-    search_query = st.text_input("Filter across metadata headers (Ticker, Profile Description, Issuer, Classification Group):", "").strip()
+    st.subheader("🔍 Metadata Cross-Reference Catalog")
+    search_query = st.text_input("Filter database rows by keyword (Ticker, Description, Issuer, Classification Group):", "").strip()
     
     if search_query:
         mask = (
@@ -400,26 +376,26 @@ def render_explorer(metadata):
 
     display_rows = []
     for row in filtered_df.itertuples():
-        desc = row.Description if pd.notna(row.Description) and str(row.Description).strip() != "" else "Profile empty."
+        desc = row.Description if pd.notna(row.Description) and str(row.Description).strip() != "" else "Reference Profile"
         url_text = str(row.URL).strip() if pd.notna(row.URL) else ""
         
         if url_text and url_text.startswith("http"):
-            profile_link = f"[{desc[:65]}...]({url_text})"
+            interactive_link = f"[{desc[:60]}...]({url_text})"
         else:
-            profile_link = desc if len(desc) <= 65 else f"{desc[:65]}..."
+            interactive_link = desc if len(desc) <= 60 else f"{desc[:60]}..."
             
         display_rows.append({
             "Ticker": row.Ticker,
             "Sub-Sector Name": row.Sub_Sector,
             "Category Group": row.Category,
             "Fund Issuer": row.Issuer,
-            "Reference Data Node": profile_link
+            "Interactive Documentation Link": interactive_link
         })
         
     if display_rows:
         st.markdown(pd.DataFrame(display_rows).to_markdown(index=False), unsafe_allow_html=True)
     else:
-        st.info("No matching matrix entries discovered for this search query.")
+        st.info("No matching database elements identified for your input query criteria.")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # APPLICATION ORCHESTRATION LAYER
@@ -429,33 +405,32 @@ def main():
     
     metadata = load_metadata()
     if metadata.empty:
-        st.error("Application dataset parsing failure. Ensure valid schema configurations.")
+        st.error("Application dataset could not be generated from source data mapping.")
         st.stop()
 
-    # ── TOP STATUS METRIC STRIP ──────────────────────────────────────────────
-    # Compute total market cap based on row availability count
-    approx_market_cap_nodes = len(metadata["Ticker"].dropna().unique())
+    # ── 1. DASHBOARD TOTAL CAPITALIZATION METRIC CONTAINERS ──────────────────
+    unique_assets_count = len(metadata["Ticker"].dropna().unique())
     
-    cols_top = st.columns([2, 2])
-    with cols_top[0]:
+    cols_metrics = st.columns([1, 1])
+    with cols_metrics[0]:
         st.markdown(f"""
         <div class="metric-container">
-            <div class="metric-lbl">Monitored Portfolio Nodes</div>
-            <div class="metric-val">{approx_market_cap_nodes} Elements</div>
+            <div class="metric-lbl">Monitored Portfolio Assets</div>
+            <div class="metric-val">{unique_assets_count} Unique Sub-Sectors</div>
         </div>
         """, unsafe_allow_html=True)
-    with cols_top[1]:
+    with cols_metrics[1]:
         st.markdown("""
         <div class="metric-container">
-            <div class="metric-lbl">Total Market Footprint Coverage</div>
+            <div class="metric-lbl">Total Sub-Sector Market Capitalization</div>
             <div class="metric-val">$4.27 Trillion</div>
         </div>
         """, unsafe_allow_html=True)
 
-    # ── HORIZON SELECTION BAR (INLINE RECTANGLES) ────────────────────────────
-    st.markdown("<p style='font-size: 14px; font-weight: 600; color:#94a3b8; margin-bottom:4px;'>Select Active Analysis Horizon Window:</p>", unsafe_allow_html=True)
-    selected_tf = st.segmented_control(
-        label="Select Analysis Window Horizon",
+    # ── 2. MAIN HORIZON SELECTOR BUTTONS (INLINE RECTANGLE PILLS) ─────────────
+    st.markdown("<p style='font-size: 14px; font-weight: 600; color:#94a3b8; margin-bottom:6px;'>Select Performance Tracking Frame Horizon:</p>", unsafe_allow_html=True)
+    selected_tf = st.pills(
+        label="Select Performance Horizon Frame",
         options=list(TIMEFRAME_MAP.keys()),
         default="2 Years",
         label_visibility="collapsed"
@@ -463,23 +438,23 @@ def main():
     months = TIMEFRAME_MAP[selected_tf]
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Core Navigation Setup
+    # Core Tab Configurations 
     tab_home, tab_metrics, tab_explorer = st.tabs([
-        "🏠 Dashboard Focus",
-        "📋 Full Metric Matrix",
-        "🔍 Database Catalog Explorer",
+        "🏠 Dashboard Performance Analysis",
+        "📋 Full Metric Engine View",
+        "🔍 Database Catalog Reference",
     ])
 
     all_tickers = metadata["Ticker"].dropna().tolist()
 
-    with st.spinner("Downloading updated market vector matrices from Yahoo Finance..."):
+    with st.spinner("Downloading synchronized raw market vector adjustments..."):
         normalized, metrics_df = fetch_prices(all_tickers, months)
 
     if metrics_df.empty:
-        st.error("No market analytics data could be retrieved for this selected timeframe context.")
+        st.error("No transactional engine matrices received for this time configuration.")
         st.stop()
 
-    # Router Layout Rendering Switch
+    # Controller Router Triggers
     with tab_home:
         render_home(normalized, metrics_df, metadata, months, selected_tf)
 
@@ -489,12 +464,12 @@ def main():
     with tab_explorer:
         render_explorer(metadata)
 
-    # Base Application Layout Footer
+    # Application Footer Line
     st.markdown("---")
     st.markdown("""
     <div style="font-size:11px; color:#475569; text-align:center; padding:8px 0; line-height:1.5;">
-        Data via Yahoo Finance (adjusted close prices) · Risk-free rate pegged at 4.25% annualized · 
-        Performance metrics calculated based on monthly distributions.
+        Data calculated via Yahoo Finance API (adjusted split/dividend close metrics) · Risk-free rate pegged at 4.25% annualized · 
+        Performance tracking elements calculated over standard monthly intervals.
     </div>
     """, unsafe_allow_html=True)
 
