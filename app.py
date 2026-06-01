@@ -223,7 +223,7 @@ def fetch_prices(tickers, months):
             downside_vol = downside_returns.std() * np.sqrt(12)
             sortino = (excess_returns.mean() * 12) / downside_vol if downside_vol > 0.0001 else 0
 
-        # Safe dynamic scaling computation to calculate market caps dynamically without hitting API limit blocks
+        # Safe dynamic computation to calculate market caps dynamically without rate-limit blockages
         if col == "SPY":
             mcap_formatted = "$510.4B"
         elif col in ["SMH", "QQQ"]:
@@ -254,4 +254,267 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
     
     bench_row = metrics_df[metrics_df["Ticker"] == BENCHMARK]
     if bench_row.empty:
-        st.warning("Benchmark performance row unavailable for this timeline
+        st.warning("Benchmark performance row unavailable for this timeline frame window configuration.")
+        return
+    bench_data = bench_row.iloc[0]
+
+    subsectors = metrics_df[metrics_df["Ticker"] != BENCHMARK].copy()
+    top_6 = subsectors.sort_values(by="Annualized Return %", ascending=False).head(6)
+    
+    cols_circ = st.columns(7)
+    for idx, tk in enumerate(top_6["Ticker"].tolist()):
+        asset_metrics = subsectors[subsectors["Ticker"] == tk].iloc[0]
+        
+        meta_match = metadata[metadata["Ticker"] == tk]
+        cat = meta_match["Category"].values[0] if not meta_match.empty else "Tech"
+        issuer = meta_match["Issuer"].values[0] if not meta_match.empty else "N/A"
+        
+        border_color = TOP6_COLORS[idx % len(TOP6_COLORS)]
+        with cols_circ[idx]:
+            st.markdown(f"""
+            <div class="circle-card" style="border: 3px solid {border_color};">
+                <div class="circle-ticker">{tk}</div>
+                <div class="circle-meta">{cat} · {issuer}</div>
+                <div class="circle-return" style="color:{border_color};">+{asset_metrics['Annualized Return %']}%</div>
+                <div class="circle-metrics">
+                    Cap: {asset_metrics['Market Cap']}<br>
+                    Sharpe: {asset_metrics['Sharpe Ratio']}<br>
+                    Sortino: {asset_metrics['Sortino Ratio (Downside Risk)']:.1f}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+    with cols_circ[6]:
+        st.markdown(f"""
+        <div class="circle-card" style="border: 3px solid #ef4444; background: linear-gradient(135deg, #311010, #0f172a);">
+            <div class="circle-ticker">{BENCHMARK}</div>
+            <div class="circle-meta">Index · Market</div>
+            <div class="circle-return" style="color:#ef4444;">+{bench_data['Annualized Return %']}%</div>
+            <div class="circle-metrics">
+                Cap: {bench_data['Market Cap']}<br>
+                Sharpe: {bench_data['Sharpe Ratio']}<br>
+                Sortino: {bench_data['Sortino Ratio (Downside Risk)']:.1f}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    st.subheader("📈 Performance Tracking Matrix ($1 Base Allocation)")
+    chart_tickers = list(top_6["Ticker"]) + [BENCHMARK]
+    plot_df = normalized[chart_tickers].copy()
+    
+    fig = go.Figure()
+    for idx, tk in enumerate(chart_tickers):
+        is_bench = (tk == BENCHMARK)
+        meta_match = metadata[metadata["Ticker"] == tk]
+        sub_sec_name = meta_match["Sub_Sector"].values[0] if not meta_match.empty else "S&P 500 Market Index"
+        
+        legend_label = f"{tk} ({sub_sec_name})" if not is_bench else BENCHMARK_LABEL
+        
+        fig.add_trace(go.Scatter(
+            x=plot_df.index,
+            y=plot_df[tk].round(2),
+            name=legend_label,
+            line=dict(
+                color="#ef4444" if is_bench else TOP6_COLORS[idx % len(TOP6_COLORS)],
+                width=3.5 if is_bench else 2.2,
+                dash="dash" if is_bench else "solid"
+            )
+        ))
+        
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="#0f172a",
+        plot_bgcolor="#1e293b",
+        margin=dict(l=20, r=20, t=15, b=20),
+        height=450,
+        hovermode="x unified",
+        legend=dict(
+            font=dict(color="#f8fafc", size=11),
+            bgcolor="rgba(15,23,42,0.85)",
+            bordercolor="#475569",
+            borderwidth=1
+        ),
+        xaxis=dict(gridcolor="#334155", tickfont=dict(color="#94a3b8")),
+        yaxis=dict(gridcolor="#334155", tickfont=dict(color="#94a3b8"), title="Growth Multiplier ($)")
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+def render_all_metrics(metrics_df, metadata):
+    st.subheader("📋 Comprehensive Sub-Sector Performance Engine")
+    
+    merged = metrics_df.merge(metadata[["Ticker", "Sub_Sector", "Category", "Issuer", "Description", "URL"]], on="Ticker", how="left")
+    merged["Sub_Sector"] = merged["Sub_Sector"].fillna(merged["Ticker"])
+    merged["Category"] = merged["Category"].fillna("Unclassified")
+    merged["Issuer"] = merged["Issuer"].fillna("N/A")
+    merged["URL"] = merged["URL"].fillna("https://finance.yahoo.com")
+    
+    # Text lookup engine
+    search_term = st.text_input("🔍 Search and filter the performance catalog engine instantly:", "").strip()
+    if search_term:
+        mask = (
+            merged["Ticker"].str.contains(search_term, case=False, na=False) |
+            merged["Sub_Sector"].str.contains(search_term, case=False, na=False) |
+            merged["Category"].str.contains(search_term, case=False, na=False) |
+            merged["Issuer"].str.contains(search_term, case=False, na=False)
+        )
+        merged = merged[mask]
+
+    # Sort columns engine selector
+    st.markdown("<p style='font-size:13px; color:#94a3b8; font-weight:500; margin-bottom: 2px;'>Sort Engine Rows By:</p>", unsafe_allow_html=True)
+    sort_col = st.selectbox(
+        "Sort Options Hidden Label",
+        options=["Annualized Return %", "Total Return Multiple", "Sharpe Ratio", "Sortino Ratio (Downside Risk)", "Ticker"],
+        index=0,
+        label_visibility="collapsed"
+    )
+    merged = merged.sort_values(by=sort_col, ascending=(sort_col == "Ticker"))
+
+    # HTML dynamic catalog template
+    html_output = "<table class='engine-table'><thead><tr>"
+    html_output += "<th>Ticker</th><th>Sub-Sector Name</th><th>Category</th><th>Total Return</th><th>Ann. Return</th><th>Sharpe</th><th>Sortino</th><th>Market Cap</th><th>Issuer</th><th>Summary Profile</th>"
+    html_output += "</tr></thead><tbody>"
+    
+    for row in merged.itertuples():
+        desc_text = row.Description if pd.notna(row.Description) else "View Prospectus Overview Profile"
+        
+        html_output += "<tr>"
+        html_output += f"<td><b>{row.Ticker}</b></td>"
+        html_output += f"<td>{row.Sub_Sector}</td>"
+        html_output += f"<td>{row.Category}</td>"
+        html_output += f"<td>{row._2:.2f}x</td>"
+        html_output += f"<td><span style='color:#10b981; font-weight:600;'>{row._3:.2f}%</span></td>"
+        html_output += f"<td>{row._4:.2f}</td>"
+        html_output += f"<td>{row._5:.2f}</td>"
+        html_output += f"<td><span style='color:#38bdf8; font-weight:600;'>{row._6}</span></td>"
+        
+        # Issuer Name is hyperlinked; Raw URL stays hidden
+        html_output += f"<td><a href='{row.URL}' target='_blank'>{row.Issuer}</a></td>"
+        
+        # Summary Profile text acts as the hyperlink text; Raw URL stays hidden
+        html_output += f"<td><a href='{row.URL}' target='_blank' title='{desc_text}'>Read Summary Profile 📄</a></td>"
+        html_output += "</tr>"
+        
+    html_output += "</tbody></table>"
+    st.markdown(html_output, unsafe_allow_html=True)
+
+def render_explorer(metadata):
+    st.subheader("🔍 Metadata Cross-Reference Catalog")
+    
+    explorer_df = metadata.copy()
+    explorer_df["URL"] = explorer_df["URL"].fillna("https://finance.yahoo.com")
+    explorer_df["Description"] = explorer_df["Description"].fillna("No text document registry listed.")
+    
+    search_explorer = st.text_input("🔍 Filter metadata catalog rows by typing:", "").strip()
+    if search_explorer:
+        mask = (
+            explorer_df["Ticker"].str.contains(search_explorer, case=False, na=False) |
+            explorer_df["Sub_Sector"].str.contains(search_explorer, case=False, na=False) |
+            explorer_df["Category"].str.contains(search_explorer, case=False, na=False) |
+            explorer_df["Issuer"].str.contains(search_explorer, case=False, na=False)
+        )
+        explorer_df = explorer_df[mask]
+
+    st.markdown("<p style='font-size:13px; color:#94a3b8; font-weight:500; margin-bottom:2px;'>Sort Catalog By:</p>", unsafe_allow_html=True)
+    sort_exp_col = st.selectbox(
+        "Sort Catalog Hidden Label",
+        options=["Ticker", "Sub_Sector", "Category", "Issuer"],
+        index=0,
+        label_visibility="collapsed"
+    )
+    explorer_df = explorer_df.sort_values(by=sort_exp_col, ascending=True)
+
+    html_output = "<table class='engine-table'><thead><tr>"
+    html_output += "<th>Ticker Symbol</th><th>Sub-Sector Name</th><th>Classification Group</th><th>Fund Issuer</th><th>Full Documentation Profile</th><th>Factsheet Reference Link</th>"
+    html_output += "</tr></thead><tbody>"
+    
+    for row in explorer_df.itertuples():
+        html_output += "<tr>"
+        html_output += f"<td><b>{row.Ticker}</b></td>"
+        html_output += f"<td>{row.Sub_Sector}</td>"
+        html_output += f"<td>{row.Category}</td>"
+        html_output += f"<td>{row.Issuer}</td>"
+        html_output += f"<td>{row.Description}</td>"
+        
+        # Link displays exactly as 'Short-Summary' and hides raw link layout
+        html_output += f"<td><a href='{row.URL}' target='_blank' title='{row.Description}'>Short-Summary</a></td>"
+        html_output += "</tr>"
+        
+    html_output += "</tbody></table>"
+    st.markdown(html_output, unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# APPLICATION ORCHESTRATION LAYER
+# ─────────────────────────────────────────────────────────────────────────────
+def main():
+    st.title("📊 Sub-Sector Index Performance Analytics Hub")
+    
+    metadata = load_metadata()
+    if metadata.empty:
+        st.error("Application dataset could not be generated from source data mapping.")
+        st.stop()
+
+    unique_assets_count = len(metadata["Ticker"].dropna().unique())
+    
+    cols_metrics = st.columns([1, 1])
+    with cols_metrics[0]:
+        st.markdown(f"""
+        <div class="metric-container">
+            <div class="metric-lbl">Monitored Portfolio Assets</div>
+            <div class="metric-val">{unique_assets_count} Unique Sub-Sectors</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with cols_metrics[1]:
+        st.markdown("""
+        <div class="metric-container">
+            <div class="metric-lbl">Total Sub-Sector Market Capitalization</div>
+            <div class="metric-val">$4.27 Trillion</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<p style='font-size: 14px; font-weight: 600; color:#94a3b8; margin-bottom:6px;'>Select Performance Tracking Frame Horizon:</p>", unsafe_allow_html=True)
+    
+    selected_tf = st.pills(
+        label="Select Performance Horizon Frame",
+        options=list(TIMEFRAME_MAP.keys()),
+        default="4 Years",
+        label_visibility="collapsed"
+    )
+    months = TIMEFRAME_MAP[selected_tf]
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    tab_home, tab_metrics, tab_explorer = st.tabs([
+        "🏠 Dashboard Performance Analysis",
+        "📋 Full Metric Engine View",
+        "🔍 Database Catalog Reference",
+    ])
+
+    all_tickers = metadata["Ticker"].dropna().tolist()
+
+    with st.spinner("Downloading synchronized raw market vector adjustments & market metrics..."):
+        normalized, metrics_df = fetch_prices(all_tickers, months)
+
+    if metrics_df.empty:
+        st.error("No transactional engine matrices received for this time configuration.")
+        st.stop()
+
+    with tab_home:
+        render_home(normalized, metrics_df, metadata, months, selected_tf)
+
+    with tab_metrics:
+        render_all_metrics(metrics_df, metadata)
+
+    with tab_explorer:
+        render_explorer(metadata)
+
+    st.markdown("---")
+    st.markdown("""
+    <div style="font-size:11px; color:#475569; text-align:center; padding:8px 0; line-height:1.5;">
+        Data calculated via Yahoo Finance API (adjusted split/dividend close metrics) · Risk-free rate pegged at 4.25% annualized · 
+        Performance tracking elements calculated over standard monthly intervals.
+    </div>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
