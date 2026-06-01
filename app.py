@@ -206,12 +206,12 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
     subsectors = metrics_df[metrics_df["Ticker"] != BENCHMARK].copy()
     top_6 = subsectors.sort_values(by="Annualized Return %", ascending=False).head(6)
     
-    # Render Circle Badges via direct DataFrame row indexing to prevent KeyErrors
+    # Render Circle Badges via explicit column indexing keys
     cols_circ = st.columns(7)
     for idx, tk in enumerate(top_6["Ticker"].tolist()):
         asset_metrics = subsectors[subsectors["Ticker"] == tk].iloc[0]
+        border_color = TOP6_COLORS[idx % len(TOP6_COLORS)]
         with cols_circ[idx]:
-            border_color = TOP6_COLORS[idx % len(TOP6_COLORS)]
             st.markdown(f"""
             <div class="circle-card" style="border: 3px solid {border_color};">
                 <div class="circle-ticker">{tk}</div>
@@ -266,7 +266,7 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
         height=450,
         hovermode="x unified",
         legend=dict(
-            font=dict(color="#f8fafc", size=12),  # Clear, bright high-contrast text color
+            font=dict(color="#f8fafc", size=12),  # Bright high-contrast color text 
             bgcolor="rgba(15,23,42,0.85)",
             bordercolor="#475569",
             borderwidth=1
@@ -333,17 +333,17 @@ def render_all_metrics(metrics_df, metadata):
     merged["Sub_Sector"] = merged["Sub_Sector"].fillna(merged["Ticker"])
     merged["Category"] = merged["Category"].fillna("Unclassified")
     
-    # Format rows to replace full descriptions and text URLs with clean links
+    # Format rows to replace full descriptions and text URLs with hyperlinked profile tags
     display_rows = []
-    for row in merged.itertuples():
-        desc = row.Description if pd.notna(row.Description) and str(row.Description).strip() != "" else "View Profile"
+    for row in merged.iter Carburetors() if hasattr(merged, 'iter Carburetors') else merged.itertuples():
+        desc = row.Description if pd.notna(row.Description) and str(row.Description).strip() != "" else "View Factsheet"
         url_text = str(row.URL).strip() if pd.notna(row.URL) else ""
         
-        # Turn into hyperlink markdown string
+        # Safe URL assignment
         if url_text and url_text.startswith("http"):
-            summary_link = f"[{desc[:45]}...]({url_text})"
+            summary_link = f'<a href="{url_text}" target="_blank">{desc[:50]}...</a>'
         else:
-            summary_link = desc if len(desc) <= 45 else f"{desc[:45]}..."
+            summary_link = desc[:50]
             
         display_rows.append({
             "Ticker": row.Ticker,
@@ -357,7 +357,12 @@ def render_all_metrics(metrics_df, metadata):
         })
         
     df_display = pd.DataFrame(display_rows)
-    st.markdown(df_display.to_markdown(index=False), unsafe_allow_html=True)
+    
+    # Render with Streamlit's native safe data frame loader to avoid tabulate dependency errors
+    st.write(
+        df_display.to_html(escape=False, index=False), 
+        unsafe_allow_html=True
+    )
 
 def render_explorer(metadata):
     st.subheader("🔍 Metadata Cross-Reference Catalog")
@@ -376,13 +381,13 @@ def render_explorer(metadata):
 
     display_rows = []
     for row in filtered_df.itertuples():
-        desc = row.Description if pd.notna(row.Description) and str(row.Description).strip() != "" else "Reference Profile"
+        desc = row.Description if pd.notna(row.Description) and str(row.Description).strip() != "" else "Reference Data"
         url_text = str(row.URL).strip() if pd.notna(row.URL) else ""
         
         if url_text and url_text.startswith("http"):
-            interactive_link = f"[{desc[:60]}...]({url_text})"
+            interactive_link = f'<a href="{url_text}" target="_blank">{desc[:65]}...</a>'
         else:
-            interactive_link = desc if len(desc) <= 60 else f"{desc[:60]}..."
+            interactive_link = desc[:65]
             
         display_rows.append({
             "Ticker": row.Ticker,
@@ -393,7 +398,8 @@ def render_explorer(metadata):
         })
         
     if display_rows:
-        st.markdown(pd.DataFrame(display_rows).to_markdown(index=False), unsafe_allow_html=True)
+        df_exp = pd.DataFrame(display_rows)
+        st.write(df_exp.to_html(escape=False, index=False), unsafe_allow_html=True)
     else:
         st.info("No matching database elements identified for your input query criteria.")
 
@@ -429,6 +435,8 @@ def main():
 
     # ── 2. MAIN HORIZON SELECTOR BUTTONS (INLINE RECTANGLE PILLS) ─────────────
     st.markdown("<p style='font-size: 14px; font-weight: 600; color:#94a3b8; margin-bottom:6px;'>Select Performance Tracking Frame Horizon:</p>", unsafe_allow_html=True)
+    
+    # Utilizing st.pills to support clean rectangle selections
     selected_tf = st.pills(
         label="Select Performance Horizon Frame",
         options=list(TIMEFRAME_MAP.keys()),
@@ -467,11 +475,4 @@ def main():
     # Application Footer Line
     st.markdown("---")
     st.markdown("""
-    <div style="font-size:11px; color:#475569; text-align:center; padding:8px 0; line-height:1.5;">
-        Data calculated via Yahoo Finance API (adjusted split/dividend close metrics) · Risk-free rate pegged at 4.25% annualized · 
-        Performance tracking elements calculated over standard monthly intervals.
-    </div>
-    """, unsafe_allow_html=True)
-
-if __name__ == "__main__":
-    main()
+    <div style="font-size:11px; color:#475569; text-
