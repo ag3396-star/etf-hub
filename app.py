@@ -206,7 +206,7 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
     subsectors = metrics_df[metrics_df["Ticker"] != BENCHMARK].copy()
     top_6 = subsectors.sort_values(by="Annualized Return %", ascending=False).head(6)
     
-    # Render Circle Badges via explicit column indexing keys
+    # Render Circle Badges
     cols_circ = st.columns(7)
     for idx, tk in enumerate(top_6["Ticker"].tolist()):
         asset_metrics = subsectors[subsectors["Ticker"] == tk].iloc[0]
@@ -266,7 +266,7 @@ def render_home(normalized, metrics_df, metadata, months, selected_tf):
         height=450,
         hovermode="x unified",
         legend=dict(
-            font=dict(color="#f8fafc", size=12),  # Bright high-contrast color text 
+            font=dict(color="#f8fafc", size=12),
             bgcolor="rgba(15,23,42,0.85)",
             bordercolor="#475569",
             borderwidth=1
@@ -333,13 +333,11 @@ def render_all_metrics(metrics_df, metadata):
     merged["Sub_Sector"] = merged["Sub_Sector"].fillna(merged["Ticker"])
     merged["Category"] = merged["Category"].fillna("Unclassified")
     
-    # Format rows to replace full descriptions and text URLs with hyperlinked profile tags
     display_rows = []
-    for row in merged.iter Carburetors() if hasattr(merged, 'iter Carburetors') else merged.itertuples():
+    for row in merged.itertuples():
         desc = row.Description if pd.notna(row.Description) and str(row.Description).strip() != "" else "View Factsheet"
         url_text = str(row.URL).strip() if pd.notna(row.URL) else ""
         
-        # Safe URL assignment
         if url_text and url_text.startswith("http"):
             summary_link = f'<a href="{url_text}" target="_blank">{desc[:50]}...</a>'
         else:
@@ -357,12 +355,7 @@ def render_all_metrics(metrics_df, metadata):
         })
         
     df_display = pd.DataFrame(display_rows)
-    
-    # Render with Streamlit's native safe data frame loader to avoid tabulate dependency errors
-    st.write(
-        df_display.to_html(escape=False, index=False), 
-        unsafe_allow_html=True
-    )
+    st.write(df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
 
 def render_explorer(metadata):
     st.subheader("🔍 Metadata Cross-Reference Catalog")
@@ -414,7 +407,6 @@ def main():
         st.error("Application dataset could not be generated from source data mapping.")
         st.stop()
 
-    # ── 1. DASHBOARD TOTAL CAPITALIZATION METRIC CONTAINERS ──────────────────
     unique_assets_count = len(metadata["Ticker"].dropna().unique())
     
     cols_metrics = st.columns([1, 1])
@@ -433,10 +425,8 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-    # ── 2. MAIN HORIZON SELECTOR BUTTONS (INLINE RECTANGLE PILLS) ─────────────
     st.markdown("<p style='font-size: 14px; font-weight: 600; color:#94a3b8; margin-bottom:6px;'>Select Performance Tracking Frame Horizon:</p>", unsafe_allow_html=True)
     
-    # Utilizing st.pills to support clean rectangle selections
     selected_tf = st.pills(
         label="Select Performance Horizon Frame",
         options=list(TIMEFRAME_MAP.keys()),
@@ -446,7 +436,6 @@ def main():
     months = TIMEFRAME_MAP[selected_tf]
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Core Tab Configurations 
     tab_home, tab_metrics, tab_explorer = st.tabs([
         "🏠 Dashboard Performance Analysis",
         "📋 Full Metric Engine View",
@@ -462,7 +451,6 @@ def main():
         st.error("No transactional engine matrices received for this time configuration.")
         st.stop()
 
-    # Controller Router Triggers
     with tab_home:
         render_home(normalized, metrics_df, metadata, months, selected_tf)
 
@@ -472,7 +460,13 @@ def main():
     with tab_explorer:
         render_explorer(metadata)
 
-    # Application Footer Line
     st.markdown("---")
     st.markdown("""
-    <div style="font-size:11px; color:#475569; text-
+    <div style="font-size:11px; color:#475569; text-align:center; padding:8px 0; line-height:1.5;">
+        Data calculated via Yahoo Finance API (adjusted split/dividend close metrics) · Risk-free rate pegged at 4.25% annualized · 
+        Performance tracking elements calculated over standard monthly intervals.
+    </div>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
